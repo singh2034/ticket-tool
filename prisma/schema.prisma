@@ -19,17 +19,22 @@ enum Role {
   ADMIN
 }
 
-enum TicketStatus {
-  OPEN
-  IN_PROGRESS
-  RESOLVED
-  CLOSED
+enum TicketSource {
+  WEB
+  EMAIL
 }
 
 enum Priority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }
 
 model User {
@@ -55,6 +60,7 @@ model Ticket {
 
   status TicketStatus @default(OPEN)
   priority Priority @default(MEDIUM)
+  source TicketSource @default(WEB)
 
   createdById String
   assignedToId String?
