@@ -1,0 +1,51 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id: ticketId } = await params;
+    const { message, userId } = await request.json();
+
+    if (!message || !userId) {
+      return NextResponse.json(
+        { message: "Message and userId are required" },
+        { status: 400 },
+      );
+    }
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+    if (!ticket) {
+      return NextResponse.json(
+        { message: "Ticket not found" },
+        { status: 404 },
+      );
+    }
+    const comment = await prisma.comment.create({
+      data: {
+        message,
+        ticketId,
+        userId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+    return NextResponse.json(comment, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}

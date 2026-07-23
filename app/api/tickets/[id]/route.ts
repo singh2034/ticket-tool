@@ -59,10 +59,51 @@ export async function GET(
 // update the ticket status by ID
 export async function PATCH(
   request: Request,
-  {params}: {params: Promise<{id: string}>}
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const {id} = await params;
+    const { id } = await params;
     const body = await request.json();
+    const { status, priority, assignedToId } = body;
+    const existingTicket = await prisma.ticket.findUnique({
+      where: { id },
+    });
+    if (!existingTicket) {
+      return NextResponse.json(
+        { message: "Ticket not Found" },
+        { status: 404 },
+      );
+    }
+    if (assignedToId) {
+      const agent = await prisma.user.findUnique({
+        where: { id: assignedToId },
+      });
+
+      if (!agent) {
+        return NextResponse.json(
+          { message: "Assigned user not found" },
+          { status: 404 },
+        );
+      }
+    }
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        status,
+        priority,
+        assignedToId,
+      },
+    });
+    return NextResponse.json(updatedTicket, {
+      status: 200,
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      {
+        message: "Internal Server Error",
+      },
+      { status: 500 },
+    );
   }
 }
