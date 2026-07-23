@@ -1,10 +1,12 @@
-export async function getTickets() {
-  const res = await fetch("/api/tickets");
-  if (!res.ok) {
-    throw new Error("failed to fetch tickets");
-  }
-  return res.json();
-}
+// export async function getTickets() {
+//   const res = await fetch("http://localhost:3000/api/tickets", {
+//     cache: "no-store",
+//   });
+//   if (!res.ok) {
+//     throw new Error("failed to fetch tickets");
+//   }
+//   return res.json();
+// }
 
 export async function getTicket(id: string) {
   const res = await fetch("/api/tickets/${id}");
