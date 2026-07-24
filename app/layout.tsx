@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pluto Tickets - Manage your work efficiently",
+  title: "Neptune INC - TMS - Manage your work efficiently",
   description: "Created By Aayush Singh",
 };
 

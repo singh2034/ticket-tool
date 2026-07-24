@@ -5,12 +5,12 @@
 
 generator client {
   provider = "prisma-client-js"
-//  output   = "../app/generated/prisma"
+  //  output   = "../app/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -38,13 +38,13 @@ enum TicketStatus {
 }
 
 model User {
-  id String @id @default(cuid())
-  name String
-  email String @unique
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
   password String
-  role Role @default(USER)
+  role     Role   @default(USER)
 
-  createdTickets Ticket[] @relation("CreatedBy")
+  createdTickets  Ticket[] @relation("CreatedBy")
   assignedTickets Ticket[] @relation("AssignedTo")
 
   comments Comment[]
@@ -54,20 +54,21 @@ model User {
 }
 
 model Ticket {
-  id  String @id @default(cuid())
+  id String @id @default(cuid())
+
   ticketNumber Int @unique // @default(autoincrement())
-  title String
+
+  title       String
   description String
 
+  status   TicketStatus @default(OPEN)
+  priority Priority     @default(MEDIUM)
+  source   TicketSource @default(WEB)
 
-  status TicketStatus @default(OPEN)
-  priority Priority @default(MEDIUM)
-  source TicketSource @default(WEB)
-
-  createdById String
+  createdById  String
   assignedToId String?
 
-  createdBy User @relation("CreatedBy", fields: [createdById], references: [id])
+  createdBy  User  @relation("CreatedBy", fields: [createdById], references: [id])
   assignedTo User? @relation("AssignedTo", fields: [assignedToId], references: [id])
 
   comments Comment[]
@@ -76,15 +77,20 @@ model Ticket {
   updatedAt DateTime @updatedAt
 }
 
+model Counter {
+  id               Int @id @default(1)
+  nextTicketNumber Int @default(1)
+}
+
 model Comment {
-  id String @id @default(cuid())
+  id      String @id @default(cuid())
   message String
 
   ticketId String
-  userId String
+  userId   String
 
   ticket Ticket @relation(fields: [ticketId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 }

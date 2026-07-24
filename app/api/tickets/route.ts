@@ -22,11 +22,36 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
+
+    // last Ticket feature added - for ticket number counting TK-001
+    const counter = await prisma.counter.upsert({
+      where: {
+        id: 1,
+      },
+      update: {},
+      create: {
+        id: 1,
+        nextTicketNumber: 1,
+      },
+    });
+
+    // create ticket call
     const ticket = await prisma.ticket.create({
       data: {
+        ticketNumber: counter.nextTicketNumber,
         title,
         description,
         createdById,
+      },
+    });
+
+    // update counter
+    await prisma.counter.update({
+      where: { id: 1 },
+      data: {
+        nextTicketNumber: {
+          increment: 1,
+        },
       },
     });
 

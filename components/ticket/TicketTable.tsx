@@ -11,6 +11,7 @@ import Link from "next/link";
 
 type Ticket = {
   id: string;
+  ticketNumber: number;
   title: string;
   status: string;
   priority: string;
@@ -24,6 +25,7 @@ export default function TicketTable({ tickets }: { tickets: Ticket[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>T.No</TableHead>
           <TableHead>Title</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Priority</TableHead>
@@ -35,6 +37,7 @@ export default function TicketTable({ tickets }: { tickets: Ticket[] }) {
       <TableBody>
         {tickets.map((ticket) => (
           <TableRow key={ticket.id}>
+            <TableCell>{`TK-${ticket.ticketNumber.toString().padStart(3, "0")}`}</TableCell>
             <TableCell>{ticket.title}</TableCell>
             <TableCell>{ticket.status}</TableCell>
             <TableCell>{ticket.priority}</TableCell>

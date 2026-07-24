@@ -25,7 +25,7 @@ export default function CreateTicketForm() {
       body: JSON.stringify({
         title,
         description,
-        createdById: "cmrx9jugm0000auejp40mx5mp", // hard-coded user ID
+        createdById: "cmryt1ail0000au95t8yx8w1s", // hard-coded user ID
       }),
     });
     if (res.ok) {
