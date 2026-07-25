@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { Role, Prisma } from "@prisma/client";
 
 //  get an user by ID
 export async function GET(
@@ -90,6 +90,42 @@ export async function PATCH(
     );
   } catch (error) {
     console.log(error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
+// delete user
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    // no need of the below function
+    // const existingUser = await prisma.user.findMany({ where: { id } });
+    // if (!existingUser) {
+    //   return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // }
+
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    return NextResponse.json(
+      { message: "User deleted successfully" },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.log(error);
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
