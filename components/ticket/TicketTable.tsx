@@ -41,7 +41,7 @@ export default function TicketTable({ tickets }: { tickets: Ticket[] }) {
             <TableCell>{ticket.title}</TableCell>
             <TableCell>{ticket.status}</TableCell>
             <TableCell>{ticket.priority}</TableCell>
-            <TableCell>{ticket.createdBy.name}</TableCell>
+            <TableCell>{ticket.createdBy.name}</TableCell>  
             <TableCell>
               <Link href={`/tickets/${ticket.id}`}>
                 <Button size={"sm"}>Open</Button>
