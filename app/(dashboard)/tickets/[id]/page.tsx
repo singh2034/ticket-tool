@@ -1,8 +1,12 @@
 import { Label } from "@/components/ui/label";
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { notFound } from "next/navigation";
 import StatusSelect from "@/components/ticket/StatusSelect";
 import PrioritySelect from "@/components/ticket/PrioritySelect";
+import CommentList from "@/components/ticket/CommentList";
+import AddCommentForm from "@/components/ticket/AddCommentForm";
+import AssignUserSelect from "@/components/ticket/AssignUserSelect";
+import { prisma } from "@/lib/prisma";
+import DeleteTicketButton from "@/components/ticket/DeleteTicketButton";
 
 interface Props {
   params: Promise<{
@@ -15,6 +19,18 @@ export default async function TicketDetailsPage({ params }: Props) {
 
   const res = await fetch(`http://localhost:3000/api/tickets/${id}`, {
     cache: "no-store",
+  });
+  const users = await prisma.user.findMany({
+    where: {
+      role: {
+        in: ["ADMIN", "AGENT"],
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+    },
   });
   if (!res.ok) {
     return notFound();
@@ -36,10 +52,29 @@ export default async function TicketDetailsPage({ params }: Props) {
         <PrioritySelect ticketId={ticket.id} priority={ticket.priority} />
       </div>
 
+      <div className="space-y-2">
+        <Label className="text-2xl">Assigned To</Label>
+
+        <AssignUserSelect
+          ticketId={ticket.id}
+          assignedToId={ticket.assignedToId}
+          users={users}
+        />
+      </div>
+
       <div>
         <strong className="text-2xl">Description:</strong>
         <p className="mt-2">{ticket.description}</p>
       </div>
+
+      <div className="space-y-2">
+        <Label className="text-2xl">Comments</Label>
+
+        <CommentList ticketId={ticket.id} />
+        <AddCommentForm ticketId={ticket.id} />
+      </div>
+
+      <DeleteTicketButton ticketId={ticket.id} />
     </div>
   );
 }

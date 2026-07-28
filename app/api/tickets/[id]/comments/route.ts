@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(
   request: Request,
@@ -7,11 +8,19 @@ export async function POST(
 ) {
   try {
     const { id: ticketId } = await params;
-    const { message, userId } = await request.json();
+    const { message } = await request.json();
 
-    if (!message || !userId) {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    if (!message) {
       return NextResponse.json(
-        { message: "Message and userId are required" },
+        { message: "Message is required" },
         { status: 400 },
       );
     }

@@ -89,9 +89,9 @@ export async function PATCH(
     const updatedTicket = await prisma.ticket.update({
       where: { id },
       data: {
-        status,
-        priority,
-        assignedToId,
+        ...(status !== undefined && { status }),
+        ...(priority !== undefined && { priority }),
+        ...(assignedToId !== undefined && { assignedToId }),
       },
     });
     return NextResponse.json(updatedTicket, {
@@ -103,6 +103,51 @@ export async function PATCH(
       {
         message: "Internal Server Error",
       },
+      { status: 500 },
+    );
+  }
+}
+
+// delete ticket
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+    });
+
+    if (!ticket) {
+      return NextResponse.json(
+        { message: "Ticket not found" },
+        { status: 404 },
+      );
+    }
+
+    await prisma.comment.deleteMany({
+      where: {
+        ticketId: id,
+      },
+    });
+
+    await prisma.ticket.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json(
+      { message: "Ticket deleted successfully" },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      { message: "Internal Server Error" },
       { status: 500 },
     );
   }

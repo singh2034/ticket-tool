@@ -11,9 +11,6 @@ export default async function TicketsPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold">Tickets</h1>
-      {/* <pre className="mt-6 rounded border p-4">
-        {JSON.stringify(response, null, 2)}
-      </pre> */}
       <Link href="/tickets/new">
         <Button>Create Ticket</Button>
       </Link>
