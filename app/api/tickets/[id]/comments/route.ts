@@ -33,6 +33,15 @@ export async function POST(
         { status: 404 },
       );
     }
+    const role = session.user.role;
+
+    if (role === "USER" && ticket.createdById !== userId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    if (role === "AGENT" && ticket.assignedToId !== userId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
     const comment = await prisma.comment.create({
       data: {
         message,

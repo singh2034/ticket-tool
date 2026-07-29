@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 // get unique id of the ticket
 export async function GET(
@@ -62,6 +63,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const role = session.user.role;
     const { id } = await params;
     const body = await request.json();
     const { status, priority, assignedToId } = body;
@@ -73,6 +81,15 @@ export async function PATCH(
         { message: "Ticket not Found" },
         { status: 404 },
       );
+    }
+    if (role === "AGENT" && existingTicket.assignedToId !== session.user.id) {
+      return NextResponse.json(
+        { message: "Forbidden" }, //You are not assigned to this ticket
+        { status: 403 },
+      );
+    }
+    if (role === "USER") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     if (assignedToId) {
       const agent = await prisma.user.findUnique({
@@ -86,13 +103,33 @@ export async function PATCH(
         );
       }
     }
+    if (role === "AGENT" && assignedToId !== undefined) {
+      return NextResponse.json(
+        { message: "Forbidden" }, //Only admins can assign tickets
+        { status: 403 },
+      );
+    }
+    const updateData: {
+      status?: typeof status;
+      priority?: typeof priority;
+      assignedToId?: string | null;
+    } = {};
+
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+
+    if (priority !== undefined) {
+      updateData.priority = priority;
+    }
+
+    if (role === "ADMIN" && assignedToId !== undefined) {
+      updateData.assignedToId = assignedToId;
+    }
+
     const updatedTicket = await prisma.ticket.update({
       where: { id },
-      data: {
-        ...(status !== undefined && { status }),
-        ...(priority !== undefined && { priority }),
-        ...(assignedToId !== undefined && { assignedToId }),
-      },
+      data: updateData,
     });
     return NextResponse.json(updatedTicket, {
       status: 200,
@@ -114,6 +151,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
     const { id } = await params;
 
     const ticket = await prisma.ticket.findUnique({

@@ -1,13 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
-// create a new ticket
+// Create a new ticket
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { title, description, createdById } = body;
+    const session = await auth();
 
-    if (!title || !description || !createdById) {
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const userId = session.user.id;
+
+    const body = await request.json();
+    const { title, description } = body;
+
+    if (!title || !description) {
       return NextResponse.json(
         { message: "All fields are required" },
         { status: 400 },
@@ -16,14 +28,17 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: {
-        id: createdById,
+        id: userId,
       },
     });
+
     if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 },
+      );
     }
 
-    // last Ticket feature added - for ticket number counting TK-001
     const counter = await prisma.counter.upsert({
       where: {
         id: 1,
@@ -35,19 +50,19 @@ export async function POST(request: Request) {
       },
     });
 
-    // create ticket call
     const ticket = await prisma.ticket.create({
       data: {
         ticketNumber: counter.nextTicketNumber,
         title,
         description,
-        createdById,
+        createdById: userId,
       },
     });
 
-    // update counter
     await prisma.counter.update({
-      where: { id: 1 },
+      where: {
+        id: 1,
+      },
       data: {
         nextTicketNumber: {
           increment: 1,
@@ -68,10 +83,33 @@ export async function POST(request: Request) {
   }
 }
 
-// get the ticket
+// Get tickets
 export async function GET() {
   try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const userId = session.user.id;
+    const role = session.user.role;
+
     const tickets = await prisma.ticket.findMany({
+      where:
+        role === "ADMIN"
+          ? {}
+          : role === "AGENT"
+            ? {
+                assignedToId: userId,
+              }
+            : {
+                createdById: userId,
+              },
+
       include: {
         createdBy: {
           select: {
@@ -88,6 +126,7 @@ export async function GET() {
           },
         },
       },
+
       orderBy: {
         createdAt: "desc",
       },
@@ -99,14 +138,20 @@ export async function GET() {
         count: tickets.length,
         data: tickets,
       },
-      { status: 200 },
+      {
+        status: 200,
+      },
     );
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
+      {
+        error: "Internal Server Error",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

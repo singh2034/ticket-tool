@@ -2,8 +2,10 @@ import TicketTable from "@/components/ticket/TicketTable";
 import TicketSearch from "@/components/ticket/TicketSearch";
 import StatusFilter from "@/components/ticket/StatusFilter";
 import PriorityFilter from "@/components/ticket/PriorityFilter";
+import AssigneeFilter from "@/components/ticket/AssigneeFilter";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import Link from "next/link";
 
 interface Props {
@@ -11,11 +13,12 @@ interface Props {
     search?: string;
     status?: string;
     priority?: string;
+    assignee?: string;
   }>;
 }
 
 export default async function TicketsPage({ searchParams }: Props) {
-  const { search, status, priority } = await searchParams;
+  const { search, status, priority, assignee } = await searchParams;
 
   // status filter
   const [total, open, inProgress, resolved, closed] = await Promise.all([
@@ -38,8 +41,45 @@ export default async function TicketsPage({ searchParams }: Props) {
       where: { priority: "HIGH" },
     }),
   ]);
+
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const userId = session.user.id;
+  const role = session.user.role;
+
+  // assignee
+  const users = await prisma.user.findMany({
+    where: {
+      role: {
+        in: ["ADMIN", "AGENT"],
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
   const tickets = await prisma.ticket.findMany({
     where: {
+      
+      // security
+      ...(role === "USER" && {
+        createdById: userId,
+      }),
+
+      ...(role === "AGENT" && {
+        assignedToId: userId,
+      }),
+
+      // basic UI
       ...(search && {
         OR: [
           {
@@ -60,9 +100,14 @@ export default async function TicketsPage({ searchParams }: Props) {
       ...(priority && {
         priority: priority as "LOW" | "MEDIUM" | "HIGH",
       }),
+
+      ...(assignee && {
+        assignedToId: assignee,
+      }),
     },
     include: {
       createdBy: true,
+      assignedTo: true,
     },
 
     orderBy: {
@@ -104,6 +149,7 @@ export default async function TicketsPage({ searchParams }: Props) {
                 high,
               }}
             />
+            <AssigneeFilter users={users} />
           </div>
         </div>
 

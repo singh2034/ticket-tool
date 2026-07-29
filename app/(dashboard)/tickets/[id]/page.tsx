@@ -1,25 +1,63 @@
-import { Label } from "@/components/ui/label";
-import { notFound } from "next/navigation";
-import StatusSelect from "@/components/ticket/StatusSelect";
-import PrioritySelect from "@/components/ticket/PrioritySelect";
-import CommentList from "@/components/ticket/CommentList";
+import { auth } from "@/auth";
 import AddCommentForm from "@/components/ticket/AddCommentForm";
 import AssignUserSelect from "@/components/ticket/AssignUserSelect";
-import { prisma } from "@/lib/prisma";
+import CommentList from "@/components/ticket/CommentList";
 import DeleteTicketButton from "@/components/ticket/DeleteTicketButton";
+import PrioritySelect from "@/components/ticket/PrioritySelect";
+import StatusSelect from "@/components/ticket/StatusSelect";
+import { Label } from "@/components/ui/label";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{
-    id: String;
+    id: string;
   }>;
 }
 
 export default async function TicketDetailsPage({ params }: Props) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return notFound();
+  }
+
   const { id } = await params;
 
-  const res = await fetch(`http://localhost:3000/api/tickets/${id}`, {
-    cache: "no-store",
+  const userId = session.user.id;
+  const role = session.user.role;
+
+  const ticket = await prisma.ticket.findFirst({
+    where: {
+      id,
+
+      ...(role === "USER" && {
+        createdById: userId,
+      }),
+
+      ...(role === "AGENT" && {
+        assignedToId: userId,
+      }),
+    },
+
+    include: {
+      createdBy: true,
+      assignedTo: true,
+      comments: {
+        include: {
+          user: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+    },
   });
+
+  if (!ticket) {
+    return notFound();
+  }
+
   const users = await prisma.user.findMany({
     where: {
       role: {
@@ -32,11 +70,6 @@ export default async function TicketDetailsPage({ params }: Props) {
       role: true,
     },
   });
-  if (!res.ok) {
-    return notFound();
-  }
-
-  const ticket = await res.json();
 
   return (
     <div className="max-w-3xl p-6 space-y-4">
