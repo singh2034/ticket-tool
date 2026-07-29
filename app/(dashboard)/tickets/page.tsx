@@ -14,11 +14,12 @@ interface Props {
     status?: string;
     priority?: string;
     assignee?: string;
+    page?: string;
   }>;
 }
 
 export default async function TicketsPage({ searchParams }: Props) {
-  const { search, status, priority, assignee } = await searchParams;
+  const { search, status, priority, assignee, page } = await searchParams;
 
   // status filter
   const [total, open, inProgress, resolved, closed] = await Promise.all([
@@ -69,7 +70,6 @@ export default async function TicketsPage({ searchParams }: Props) {
 
   const tickets = await prisma.ticket.findMany({
     where: {
-      
       // security
       ...(role === "USER" && {
         createdById: userId,

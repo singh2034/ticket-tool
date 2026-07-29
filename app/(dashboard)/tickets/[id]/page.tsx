@@ -8,6 +8,7 @@ import StatusSelect from "@/components/ticket/StatusSelect";
 import { Label } from "@/components/ui/label";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   params: Promise<{
@@ -18,6 +19,11 @@ interface Props {
 export default async function TicketDetailsPage({ params }: Props) {
   const session = await auth();
 
+  const role = session?.user?.role;
+  const isAdmin = role === "ADMIN";
+  const isAgent = role === "AGENT";
+  const isUser = role === "USER";
+
   if (!session?.user?.id) {
     return notFound();
   }
@@ -25,7 +31,6 @@ export default async function TicketDetailsPage({ params }: Props) {
   const { id } = await params;
 
   const userId = session.user.id;
-  const role = session.user.role;
 
   const ticket = await prisma.ticket.findFirst({
     where: {
@@ -77,22 +82,58 @@ export default async function TicketDetailsPage({ params }: Props) {
 
       <div className="space-y-2">
         <Label className="text-2xl">Status</Label>
-        <StatusSelect ticketId={ticket.id} status={ticket.status} />
+        {isUser ? (
+          <Badge
+            variant={
+              ticket.status === "OPEN"
+                ? "destructive"
+                : ticket.status === "IN_PROGRESS"
+                  ? "secondary"
+                  : ticket.status === "RESOLVED"
+                    ? "default"
+                    : "outline"
+            }
+          >
+            {ticket.status.replace("_", " ")}
+          </Badge>
+        ) : (
+          <StatusSelect ticketId={ticket.id} status={ticket.status} />
+        )}
       </div>
 
       <div>
         <Label className="text-2xl">Priority</Label>
-        <PrioritySelect ticketId={ticket.id} priority={ticket.priority} />
+        {isUser ? (
+          <Badge
+            variant={
+              ticket.priority === "HIGH"
+                ? "destructive"
+                : ticket.priority === "MEDIUM"
+                  ? "secondary"
+                  : "outline"
+            }
+          >
+            {ticket.priority}
+          </Badge>
+        ) : (
+          <PrioritySelect ticketId={ticket.id} priority={ticket.priority} />
+        )}
       </div>
 
       <div className="space-y-2">
         <Label className="text-2xl">Assigned To</Label>
 
-        <AssignUserSelect
-          ticketId={ticket.id}
-          assignedToId={ticket.assignedToId}
-          users={users}
-        />
+        {isAdmin ? (
+          <AssignUserSelect
+            ticketId={ticket.id}
+            assignedToId={ticket.assignedToId}
+            users={users}
+          />
+        ) : (
+          <p className="font-medium">
+            {ticket.assignedTo?.name ?? "Unassigned"}
+          </p>
+        )}
       </div>
 
       <div>
@@ -107,7 +148,7 @@ export default async function TicketDetailsPage({ params }: Props) {
         <AddCommentForm ticketId={ticket.id} />
       </div>
 
-      <DeleteTicketButton ticketId={ticket.id} />
+      {isAdmin && <DeleteTicketButton ticketId={ticket.id} />}
     </div>
   );
 }

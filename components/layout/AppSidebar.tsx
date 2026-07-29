@@ -10,17 +10,27 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-import { LayoutDashboard, Ticket, Users, Settings } from "lucide-react";
-import Link from "next/link";
+import { LayoutDashboard, Ticket, Users, Settings, LogOut } from "lucide-react";
 
-const items = [
-  { title: "Dasboard", url: "/", icon: LayoutDashboard },
-  { title: "Tickets", url: "/tickets", icon: Ticket },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
+import Link from "next/link";
+import { signOut, useSession } from "next-auth/react";
 
 export function AppSidebar() {
+  const { data: session } = useSession();
+
+  const role = session?.user?.role;
+
+  const items = [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard },
+    { title: "Tickets", url: "/tickets", icon: Ticket },
+
+    ...(role === "ADMIN"
+      ? [{ title: "Users", url: "/users", icon: Users }]
+      : []),
+
+    { title: "Settings", url: "/settings", icon: Settings },
+  ];
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -37,6 +47,15 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <SidebarMenuItem key="logout">
+                <SidebarMenuButton
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                >
+                  <LogOut />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
