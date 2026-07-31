@@ -3,6 +3,7 @@ import TicketSearch from "@/components/ticket/TicketSearch";
 import StatusFilter from "@/components/ticket/StatusFilter";
 import PriorityFilter from "@/components/ticket/PriorityFilter";
 import AssigneeFilter from "@/components/ticket/AssigneeFilter";
+import Pagination from "@/components/ticket/Pagination";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -15,11 +16,22 @@ interface Props {
     priority?: string;
     assignee?: string;
     page?: string;
+    sort?: string;
+    order?: string;
   }>;
 }
 
 export default async function TicketsPage({ searchParams }: Props) {
-  const { search, status, priority, assignee, page } = await searchParams;
+  const { search, status, priority, assignee, page, sort, order } =
+    await searchParams;
+
+  // pagination function
+  const currentPage = Number(page) || 1;
+  const pageSize = 10;
+
+  // sorting
+  const sortField = sort ?? "createdAt";
+  const sortOrder = order === "asc" ? "asc" : "desc";
 
   // status filter
   const [total, open, inProgress, resolved, closed] = await Promise.all([
@@ -68,6 +80,48 @@ export default async function TicketsPage({ searchParams }: Props) {
     },
   });
 
+  // console.log("Current Page:", currentPage);
+  // console.log("Skip:", (currentPage - 1) * pageSize);
+
+  const totalTickets = await prisma.ticket.count({
+    where: {
+      ...(role === "USER" && {
+        createdById: userId,
+      }),
+
+      ...(role === "AGENT" && {
+        assignedToId: userId,
+      }),
+
+      ...(search && {
+        OR: [
+          {
+            title: {
+              contains: search,
+            },
+          },
+          {
+            ticketNumber: Number(search) || -1,
+          },
+        ],
+      }),
+
+      ...(status && {
+        status: status as "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED",
+      }),
+
+      ...(priority && {
+        priority: priority as "LOW" | "MEDIUM" | "HIGH",
+      }),
+
+      ...(assignee && {
+        assignedToId: assignee,
+      }),
+    },
+  });
+
+  const totalPages = Math.ceil(totalTickets / pageSize);
+
   const tickets = await prisma.ticket.findMany({
     where: {
       // security
@@ -111,8 +165,11 @@ export default async function TicketsPage({ searchParams }: Props) {
     },
 
     orderBy: {
-      createdAt: "desc",
+      [sortField]: sortOrder,
     },
+
+    skip: (currentPage - 1) * pageSize,
+    take: pageSize,
   });
 
   // for ticket testing output
@@ -153,8 +210,9 @@ export default async function TicketsPage({ searchParams }: Props) {
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-6">
           <TicketTable tickets={tickets} />
+          <Pagination currentPage={currentPage} totalPages={totalPages} />
         </div>
       </div>
     </>
