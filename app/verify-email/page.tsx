@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -44,7 +44,7 @@ export default function VerifyEmailPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-md space-y-4 rounded-lg border p-6"
       >
-        <h1 className="text-3xl font-bold text-center">
+        <h1 className="text-center text-3xl font-bold">
           Verify Email
         </h1>
 
@@ -65,5 +65,13 @@ export default function VerifyEmailPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailForm />
+    </Suspense>
   );
 }
