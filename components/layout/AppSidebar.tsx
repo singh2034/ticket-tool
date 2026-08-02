@@ -25,7 +25,7 @@ export function AppSidebar() {
     { title: "Tickets", url: "/tickets", icon: Ticket },
 
     ...(role === "ADMIN"
-      ? [{ title: "Users", url: "/users", icon: Users }]
+      ? [{ title: "Users", url: "/admin/users", icon: Users }]
       : []),
 
     { title: "Settings", url: "/settings", icon: Settings },

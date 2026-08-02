@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/mail";
+import bcrypt from "bcrypt";
 
 export async function POST(request: Request) {
   try {
@@ -14,9 +15,7 @@ export async function POST(request: Request) {
     }
 
     const existingUser = await prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email },
     });
 
     if (existingUser) {
@@ -26,20 +25,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
 
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     await prisma.oTP.deleteMany({
-      where: {
-        email,
-      },
+      where: { email },
     });
 
     await prisma.oTP.create({
       data: {
         email,
-        otp,
+        name,
+        passwordHash,
+        otp: otpHash,
         expiresAt,
       },
     });
@@ -56,23 +58,15 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json(
-      {
-        message: "OTP sent successfully",
-      },
-      {
-        status: 200,
-      },
+      { message: "OTP sent successfully" },
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      {
-        message: "Internal Server Error",
-      },
-      {
-        status: 500,
-      },
+      { message: "Internal Server Error" },
+      { status: 500 },
     );
   }
 }

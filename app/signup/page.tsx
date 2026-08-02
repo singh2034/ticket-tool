@@ -28,7 +28,7 @@ export default function SignupPage() {
     });
 
     if (res.ok) {
-      router.push("/login");
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } else {
       const data = await res.json();
       alert(data.message || data.error);

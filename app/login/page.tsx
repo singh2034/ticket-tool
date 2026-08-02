@@ -1,5 +1,6 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,16 @@ export default function LoginPage() {
               Login
             </Button>
           </form>
+
+          <p className="mt-4 text-center text-sm">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              className="underline"
+            >
+              Sign up
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
