@@ -89,10 +89,10 @@ export default async function Home() {
           Welcome, {session?.user?.name} 👋
         </h1>
 
-        <p className="text-muted-foreground">
+        {/* <p className="text-muted-foreground">
           You are logged in as{" "}
           <span className="font-semibold">{session?.user?.role}</span>
-        </p>
+        </p> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
