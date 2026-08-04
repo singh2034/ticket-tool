@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
 
 // create user
 export async function POST(request: Request) {
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
         role,
       },
     });
+    revalidatePath("/admin/users");
 
     return NextResponse.json(
       {

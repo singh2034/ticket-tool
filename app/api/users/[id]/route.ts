@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Role, Prisma } from "@prisma/client";
 import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
 
 //  get an user by ID
 export async function GET(
@@ -130,6 +131,7 @@ export async function DELETE(
     await prisma.user.delete({
       where: { id },
     });
+    revalidatePath("/admin/users");
 
     return NextResponse.json(
       { message: "User deleted successfully" },
@@ -142,6 +144,15 @@ export async function DELETE(
       error.code === "P2025"
     ) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        { error: "This user can't be deleted, the user has tickets." },
+        { status: 500 },
+      );
     }
     return NextResponse.json(
       { error: "Internal Server Error" },
