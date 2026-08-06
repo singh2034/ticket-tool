@@ -37,6 +37,20 @@ enum TicketStatus {
   CLOSED
 }
 
+enum TicketHistoryAction {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  COMMENT_ADDED
+  COMMENT_EDITED
+  COMMENT_DELETED
+  CLOSED
+  REOPENED
+}
+
 model User {
   id       String @id @default(cuid())
   name     String
@@ -48,6 +62,7 @@ model User {
   assignedTickets Ticket[] @relation("AssignedTo")
 
   comments Comment[]
+  history  TicketHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,6 +87,7 @@ model Ticket {
   assignedTo User? @relation("AssignedTo", fields: [assignedToId], references: [id])
 
   comments Comment[]
+  history  TicketHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -105,4 +121,26 @@ model OTP {
   createdAt    DateTime @default(now())
 
   @@index([email])
+}
+
+model TicketHistory {
+  id String @id @default(cuid())
+
+  ticketId String
+  userId   String?
+
+  action TicketHistoryAction
+
+  field    String?
+  oldValue String?
+  newValue String?
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([userId])
+  @@index([createdAt])
 }

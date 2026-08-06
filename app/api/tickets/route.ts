@@ -8,10 +8,7 @@ export async function POST(request: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -33,43 +30,51 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    const counter = await prisma.counter.upsert({
-      where: {
-        id: 1,
-      },
-      update: {},
-      create: {
-        id: 1,
-        nextTicketNumber: 1,
-      },
-    });
-
-    const ticket = await prisma.ticket.create({
-      data: {
-        ticketNumber: counter.nextTicketNumber,
-        title,
-        description,
-        createdById: userId,
-      },
-    });
-
-    await prisma.counter.update({
-      where: {
-        id: 1,
-      },
-      data: {
-        nextTicketNumber: {
-          increment: 1,
+    const ticket = await prisma.$transaction(async (tx) => {
+      const counter = await tx.counter.upsert({
+        where: {
+          id: 1,
         },
-      },
-    });
+        update: {},
+        create: {
+          id: 1,
+          nextTicketNumber: 1,
+        },
+      });
 
+      const ticket = await tx.ticket.create({
+        data: {
+          ticketNumber: counter.nextTicketNumber,
+          title,
+          description,
+          createdById: userId,
+        },
+      });
+
+      await tx.ticketHistory.create({
+        data: {
+          ticketId: ticket.id,
+          userId,
+          action: "CREATED",
+        },
+      });
+
+      await tx.counter.update({
+        where: {
+          id: 1,
+        },
+        data: {
+          nextTicketNumber: {
+            increment: 1,
+          },
+        },
+      });
+
+      return ticket;
+    });
     return NextResponse.json(ticket, {
       status: 201,
     });
@@ -89,10 +94,7 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const userId = session.user.id;
